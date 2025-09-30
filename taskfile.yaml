@@ -1,0 +1,117 @@
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  MAIN_PACKAGE_PATH: .
+  MAIN_BINARY_NAME: data-app
+  MAIN_APP_NAME: data-app
+  GRC_APP:
+    sh: command -v grc 2> /dev/null || exit 0
+  LOG_FILE: log.txt
+
+tasks:
+  default:
+    desc: run tidy, lint, test
+    cmds:
+      - task: tidy
+      - task: lint
+      - task: test
+
+  tidy:
+    desc: format code and tidy modfile
+    cmds:
+      - golangci-lint fmt
+      - go mod tidy -v
+
+  lint:
+    desc: lint code with golangci-lint
+    cmds:
+      - golangci-lint run {{ .CLI_ARGS }}
+
+  lint/docker:
+    desc: lint Dockerfile with hadolint
+    cmds:
+      - podman run --rm -i ghcr.io/hadolint/hadolint < Dockerfile
+      - podman run --rm -i ghcr.io/hadolint/hadolint < Dockerfile.dev
+
+  lint/run:*:
+    desc: lint code with spectific linter $ task lint/run:<linter>
+    vars:
+      LINTER: "{{index .MATCH 0}}"
+    cmds:
+      - golangci-lint run --default=none -E {{ .LINTER }}
+
+  audit:
+    desc: run quality control checks
+    cmds:
+      - go mod verify
+      - go vet ./...
+      - task: lint
+      - go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
+      - go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - "{{ .GRC_APP }} go test -race -buildvcs -vet=off ./..."
+      - task: lint/docker
+
+  upgrade/packages:
+    desc: gen new versions of packets
+    cmds:
+      - go get -u ./...
+      - go mod tidy -v
+
+  test:
+    desc: run all tests
+    cmds:
+      - "{{.GRC_APP}} go test -v -race -buildvcs ./..."
+
+  test/cover:
+    desc: run all tests and display coverage
+    cmds:
+      - "{{.GRC_APP}} go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./..."
+      - go tool cover -html=/tmp/coverage.out -o coverage.html
+
+  build:
+    desc: build the application
+    cmds:
+      - go build -o=/tmp/bin/{{ .MAIN_BINARY_NAME }} {{ .MAIN_PACKAGE_PATH }}
+
+  build/image:
+    desc: build container image
+    cmds:
+      - podman build -t {{ .MAIN_APP_NAME }}:latest --file Dockerfile
+
+  build/image/dev:
+    desc: build dev container image
+    cmds:
+      - podman build -t {{ .MAIN_APP_NAME }}:latest --file Dockerfile.dev
+
+  run/server:
+    desc: run the application
+    deps: [build]
+    cmds:
+      - /tmp/bin/{{.MAIN_BINARY_NAME}} server {{ .CLI_ARGS }}
+
+  run/server/log:
+    desc: run the application with stdout to file
+    deps: [build]
+    cmds:
+      - mkdir -p /tmp/log/
+      - /tmp/bin/{{.MAIN_BINARY_NAME}} server {{ .CLI_ARGS }} > /tmp/log/{{ .LOG_FILE }}
+
+  run/hl:
+    desc: watch log with hl
+    silent: true
+    cmds:
+      - hl --follow /tmp/log/{{ .LOG_FILE }}
+
+  run/server/live:
+    desc: run the application with reloading on file changes
+    cmds:
+      - go run github.com/cosmtrek/air@v1.43.0
+        --build.cmd "task build" --build.bin "/tmp/bin/{{ .MAIN_BINARY_NAME }}" --build.delay "100"
+        --misc.clean_on_exit "true"
+        --build.send_interrupt "true"
+        --build.kill_delay "1000000000"
+        --
+        server
+        {{ .CLI_ARGS }}

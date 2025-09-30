@@ -1,0 +1,28 @@
+version: "2"
+linters:
+  default: all
+  disable:
+    - depguard
+    - wsl
+    - varnamelen
+  settings:
+    exhaustruct:
+      exclude:
+        - '.+/cobra\.Command$'
+        - '.*/http\.Server'
+      allow-empty: true
+      allow-empty-rx:
+        - '.*/http\.Cookie'
+    mnd:
+      ignored-files:
+        - 'cmd/server.go'
+    gocritic:
+      enable-all: true
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+    - swaggo

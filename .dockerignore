@@ -1,0 +1,7 @@
+.dockerignore
+.env
+.gitignore
+.golangci.yaml
+Dockerfile
+Dockerfile.dev
+taskfile.yaml
