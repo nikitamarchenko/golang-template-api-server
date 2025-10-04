@@ -38,13 +38,13 @@ func newServer(logger *slog.Logger, config Config) server {
 }
 
 // Run start HTTP server with provided config.
-func Run( //nolint:funlen // too many closures
+func Run( //nolint:funlen,revive // too many closures
 	logger *slog.Logger,
 	config Config,
 	allowRootUser bool,
 ) error {
-	s := newServer(logger, config)
-	log := s.newLogger("server.Run")
+	srv := newServer(logger, config)
+	log := srv.newLogger("server.Run")
 
 	err := checkUser()
 	if err != nil {
@@ -70,9 +70,9 @@ func Run( //nolint:funlen // too many closures
 
 	// global context for all connections for shutdown propagation
 	ongoingCtx, stopOngoingGracefully := context.WithCancel(context.Background())
-	srv := http.Server{
+	httpServer := http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
-		Handler: s.routes(),
+		Handler: srv.routes(),
 		BaseContext: func(_ net.Listener) context.Context {
 			return ongoingCtx
 		},
@@ -85,25 +85,24 @@ func Run( //nolint:funlen // too many closures
 
 		log.Info("HTTP server run")
 
-		err := srv.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			listenAndServeFailed <- err
+		srvErr := httpServer.ListenAndServe()
+		if srvErr != nil && !errors.Is(srvErr, http.ErrServerClosed) {
+			listenAndServeFailed <- srvErr
 		}
 	}()
 
 	select {
 	case <-ctx.Done(): // wait for sigint or sigterm:
-		break
-	case err := <-listenAndServeFailed: // in case of srv.ListenAndServe failed
-		log.Error("HTTP server", slog.Any("err", err))
+	case srvErr := <-listenAndServeFailed: // in case of srv.ListenAndServe failed
+		log.Error("HTTP server", slog.Any("err", srvErr))
 		stopOngoingGracefully()
 
-		return err
+		return srvErr
 	}
 
 	log.Info("shutdown initiated")
 	stop()
-	s.isShuttingDown.Store(true) // fail readinessProbe
+	srv.isShuttingDown.Store(true) // fail readinessProbe
 
 	delay := httpReadinessDrainDelay + time.Duration(
 		config.HTTPReadinessProbePeriodSeconds,
@@ -117,7 +116,7 @@ func Run( //nolint:funlen // too many closures
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownPeriod)
 	defer cancel()
 
-	err = srv.Shutdown(shutdownCtx)
+	err = httpServer.Shutdown(shutdownCtx)
 
 	stopOngoingGracefully()
 
@@ -137,20 +136,20 @@ func Run( //nolint:funlen // too many closures
 var ErrRootUser = errors.New("server runs as root")
 
 func checkUser() error {
-	u, err := user.Current()
+	curUser, err := user.Current()
 	if err != nil {
 		return fmt.Errorf("get user: %w", err)
 	}
 
-	if u.Username == "root" {
+	if curUser.Username == "root" {
 		return ErrRootUser
 	}
 
-	if u.Uid == "0" {
+	if curUser.Uid == "0" {
 		return fmt.Errorf("%w: UID(0)", ErrRootUser)
 	}
 
-	if u.Gid == "0" {
+	if curUser.Gid == "0" {
 		return fmt.Errorf("%w: GID(0)", ErrRootUser)
 	}
 

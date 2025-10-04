@@ -40,30 +40,34 @@ func (s *server) handlers() *http.ServeMux {
 
 // middlewareRecoverPanic intercept app panic.
 func (s *server) middlewareRecoverPanic(next http.Handler) http.Handler {
-	log := s.rootLogger.With("func", "server.middlewareRecoverPanic")
+	log := s.newLogger("server.middlewareRecoverPanic")
+
+	getError := func(a any) string {
+		switch value := a.(type) {
+		case string:
+			return value
+		case error:
+			return value.Error()
+		default:
+			return fmt.Sprint(value)
+		}
+	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				var errMessage string
-				switch v := err.(type) {
-				case string:
-					errMessage = v
-				case error:
-					errMessage = v.Error()
-				default:
-					errMessage = fmt.Sprint(v)
-				}
-
-				log.Error("panic", slog.String("err.message", errMessage))
+				log.Error("panic", slog.String("err.message", getError(err)))
 				w.Header().Set("Connection", "close")
 				w.WriteHeader(http.StatusInternalServerError)
+
 				_, err = fmt.Fprintf(
 					w,
 					`{ "details": "%s" }`,
 					http.StatusText(http.StatusInternalServerError),
 				)
-				log.Error("write response", slog.Any("err", err))
+				if err != nil {
+					log.Error("write response", slog.Any("err", err))
+				}
 			}
 		}()
 
@@ -79,7 +83,7 @@ func commonHeaders(next http.Handler) http.Handler {
 }
 
 func (s *server) handleHealthz() http.HandlerFunc {
-	log := s.rootLogger.With("func", "server.handleHealthz")
+	log := s.newLogger("server.handleHealthz")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if s.isShuttingDown.Load() {
@@ -96,7 +100,7 @@ func (s *server) handleHealthz() http.HandlerFunc {
 }
 
 func (s *server) logRequest(next http.Handler) http.Handler {
-	log := s.rootLogger.With("func", "server.logRequest")
+	log := s.newLogger("server.logRequest")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info("request", slog.Any("request", r))

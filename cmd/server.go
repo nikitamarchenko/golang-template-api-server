@@ -5,9 +5,10 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/nikitamarchenko/golang-template-api-server/internal/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/nikitamarchenko/golang-template-api-server/internal/server"
 )
 
 const (
@@ -19,7 +20,7 @@ link https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-
 )
 
 // serverCmd represents the server command.
-var serverCmd = &cobra.Command{ //nolint
+var serverCmd = &cobra.Command{ //nolint:gochecknoglobals // ok for cobra
 	Use:   "server",
 	Short: "",
 	Long:  ``,
@@ -46,11 +47,12 @@ var serverCmd = &cobra.Command{ //nolint
 	},
 }
 
-func init() { //nolint
+func init() { //nolint:gochecknoinits // ok for cobra
 	err := serverInitRun()
 	if err != nil {
-		fmt.Printf("Error: cmd.server.init: %v", err) //nolint
-		os.Exit(1)
+		_, _ = fmt.Printf("Error: cmd.server.init: %v", err) //nolint:forbidigo // we don't have logger here
+
+		os.Exit(ErrorExitCodeCMDInit)
 	}
 }
 
@@ -58,7 +60,7 @@ func serverInitRun() error {
 	flags := serverCmd.Flags()
 
 	// Port
-	flags.Int(argHTTPServerPort, 8080, "server port")
+	flags.Int(argHTTPServerPort, 8080, "server port") //nolint:mnd // ok for flags
 
 	err := viper.BindPFlag(argHTTPServerPort, flags.Lookup(argHTTPServerPort))
 	if err != nil {
@@ -66,7 +68,7 @@ func serverInitRun() error {
 	}
 
 	// readinessPprobe.periodSeconds
-	flags.Int(argHTTPReadinessProbePeriodSeconds, 10,
+	flags.Int(argHTTPReadinessProbePeriodSeconds, 10, //nolint:mnd // ok for flags
 		argHTTPReadinessProbePeriodSecondsDesc)
 
 	err = viper.BindPFlag(argHTTPReadinessProbePeriodSeconds,

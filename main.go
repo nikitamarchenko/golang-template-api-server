@@ -1,8 +1,18 @@
 // Package main contain application entry point
 package main
 
-import "github.com/nikitamarchenko/golang-template-api-server/cmd"
+import (
+	"fmt"
+	"os"
+
+	"github.com/nikitamarchenko/golang-template-api-server/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		_, _ = fmt.Printf("error: %v\n", err) //nolint:forbidigo // we don't have logger here
+
+		os.Exit(cmd.ErrorExitCodeCommon)
+	}
 }

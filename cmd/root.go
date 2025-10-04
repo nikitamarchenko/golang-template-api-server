@@ -15,25 +15,23 @@ const (
 	argGlobalLogShowSource = "log-show-source"
 )
 
-var rootCmd = &cobra.Command{ //nolint
+var rootCmd = &cobra.Command{ //nolint:gochecknoglobals // ok for cobra
 	Use:   "data-app",
 	Short: "",
 	Long:  ``,
 }
 
 // Execute entry point for main func.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+func Execute() error {
+	return rootCmd.Execute() //nolint:wrapcheck // don't need here
 }
 
-func init() { //nolint
+func init() { //nolint:gochecknoinits // ok for cobra
 	err := rootInitRun()
 	if err != nil {
-		fmt.Printf("Error: cmd.root.init: %v", err) //nolint:forbidigo // we don't have logger here
-		os.Exit(1)
+		_, _ = fmt.Printf("Error: cmd.root.init: %v", err) //nolint:forbidigo // we don't have logger here
+
+		os.Exit(ErrorExitCodeCMDInit)
 	}
 }
 
