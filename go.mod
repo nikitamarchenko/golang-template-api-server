@@ -1,6 +1,6 @@
 module github.com/nikitamarchenko/golang-template-api-server
 
-go 1.25.1
+go 1.25.2
 
 require (
 	github.com/justinas/alice v1.2.0
