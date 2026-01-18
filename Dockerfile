@@ -1,9 +1,7 @@
 # https://github.com/GoogleContainerTools/distroless
 
 # Start by building the application.
-FROM golang:1.25.1 as build
-
-ARG BINARY_NAME=app
+FROM golang:1.25.2 AS build
 
 WORKDIR /go/src/app
 
@@ -19,6 +17,8 @@ RUN CGO_ENABLED=0 go build -o /go/bin/app
 FROM gcr.io/distroless/static-debian12:nonroot
 
 WORKDIR /
+
+ARG BINARY_NAME=app
 
 COPY --from=build --chown=nonroot:nonroot /go/bin/app /usr/local/bin/${BINARY_NAME}
 
