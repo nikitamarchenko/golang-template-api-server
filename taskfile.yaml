@@ -1,14 +1,17 @@
 version: "3"
 
-dotenv: [".env"]
+dotenv: ["project.env", ".env"]
 
 vars:
   MAIN_PACKAGE_PATH: .
-  MAIN_BINARY_NAME: data-app
-  MAIN_APP_NAME: data-app
+  MAIN_BINARY_NAME: "{{ .PROJECT_NAME }}"
+  IMG_TAG: "{{ .PROJECT_VERION }}"
   GRC_APP:
     sh: command -v grc 2> /dev/null || exit 0
   LOG_FILE: log.txt
+  DEPLOYMENT_TEMPLATE_DIR: ./deployment/plain/template/
+  DEPLOYMENT_DIR: ./deployment/plain/
+  CONTAINER_TOOL: docker
 
 tasks:
   default:
@@ -78,12 +81,29 @@ tasks:
   build/image:
     desc: build container image
     cmds:
-      - podman build -t {{ .MAIN_APP_NAME }}:latest --file Dockerfile
+      - "{{ .CONTAINER_TOOL }} build -t {{ .IMG }}:{{ .IMG_TAG }} --file Dockerfile ."
 
   build/image/dev:
     desc: build dev container image
     cmds:
-      - podman build -t {{ .MAIN_APP_NAME }}:latest --file Dockerfile.dev
+      - "{{ .CONTAINER_TOOL }} build -t {{ .IMG }}:dev --file Dockerfile.dev ."
+
+  deployment/template:
+    desc: genarate k8s files with env vars
+    cmds:
+      - envsubst < "{{ .DEPLOYMENT_TEMPLATE_DIR }}deployment.yaml" > "{{.DEPLOYMENT_DIR}}deployment.yaml"
+      - envsubst < "{{ .DEPLOYMENT_TEMPLATE_DIR }}service.yaml" > "{{.DEPLOYMENT_DIR}}service.yaml"
+
+  kind/deploy:
+    desc: deploy to kind
+    deps:
+      - deployment/template
+      - build/image
+    cmds:
+      - docker exec kind-control-plane crictl rmi {{ .IMG }}:{{ .IMG_TAG }} | true
+      - kind load docker-image -q {{ .IMG }}:{{ .IMG_TAG }}
+      - kubectl delete -f deployment/plain --ignore-not-found
+      - kubectl apply -f deployment/plain --wait
 
   run/server:
     desc: run the application

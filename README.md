@@ -9,3 +9,5 @@ Install gonew
 Create project from template
 
 `gonew github.com/nikitamarchenko/golang-template-api-server@main your.domain/myprog`
+
+Update `project.env` with correct values
