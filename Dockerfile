@@ -1,7 +1,7 @@
 # https://github.com/GoogleContainerTools/distroless
 
 # Start by building the application.
-FROM golang:1.25.2 AS build
+FROM golang:1.25.6 AS build
 
 WORKDIR /go/src/app
 
