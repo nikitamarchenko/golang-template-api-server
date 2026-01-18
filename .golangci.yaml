@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.jsonschema.json
 ---
 # golangci-lint configuration file made by @ccoVeille
 # Source: https://github.com/ccoVeille/golangci-lint-config-examples/
