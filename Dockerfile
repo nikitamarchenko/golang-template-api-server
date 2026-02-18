@@ -3,6 +3,10 @@
 # Start by building the application.
 FROM golang:1.26.0 AS build
 
+ARG TARGETOS
+ARG TARGETARCH
+ARG LDFLAGS
+
 WORKDIR /go/src/app
 
 # Download packages
@@ -11,7 +15,9 @@ RUN go mod download
 
 # Build app
 COPY . . 
-RUN CGO_ENABLED=0 go build -o /go/bin/app
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a \
+  -trimpath -ldflags "${LDFLAGS} -extldflags '-static'" \
+  -o /go/bin/app
 
 # Now copy it into our base image.
 FROM gcr.io/distroless/static-debian12:nonroot

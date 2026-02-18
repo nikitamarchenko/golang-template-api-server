@@ -5,7 +5,7 @@ dotenv: ["project.env", ".env"]
 vars:
   MAIN_PACKAGE_PATH: .
   MAIN_BINARY_NAME: "{{ .PROJECT_NAME }}"
-  IMG_TAG: "{{ .PROJECT_VERION }}"
+  IMG_TAG: latest
   GRC_APP:
     sh: command -v grc 2> /dev/null || exit 0
   LOG_FILE: log.txt
@@ -15,6 +15,9 @@ vars:
   BIN_DIR: ./bin
   GOLANGCI_LINT: ./bin/golangci-lint
   GOLANGCI_VERSION: v2.10.1
+
+env:
+  CGO_ENABLED: 0
 
 tasks:
   default:
@@ -85,15 +88,29 @@ tasks:
     cmds:
       - go build -o=/tmp/bin/{{ .MAIN_BINARY_NAME }} {{ .MAIN_PACKAGE_PATH }}
 
+  build/release:
+    desc: build the application
+    vars:
+      LDFLAGS:
+        sh: hack/version.sh
+    cmds:
+      - go build -ldflags="{{ .LDFLAGS }}" -o=/tmp/bin/{{ .MAIN_BINARY_NAME }} {{ .MAIN_PACKAGE_PATH }}
+
   build/image:
     desc: build container image
+    vars:
+      LDFLAGS:
+        sh: hack/version.sh
     cmds:
-      - "{{ .CONTAINER_TOOL }} build -t {{ .IMG }}:{{ .IMG_TAG }} --file Dockerfile ."
+      - "{{ .CONTAINER_TOOL }} build --build-arg LDFLAGS='{{ .LDFLAGS }}' -t {{ .IMG }}:{{ .IMG_TAG }} --file Dockerfile ."
 
   build/image/dev:
     desc: build dev container image
+    vars:
+      LDFLAGS:
+        sh: hack/version.sh
     cmds:
-      - "{{ .CONTAINER_TOOL }} build -t {{ .IMG }}:dev --file Dockerfile.dev ."
+      - "{{ .CONTAINER_TOOL }} build --build-arg LDFLAGS='{{ .LDFLAGS }}' -t {{ .IMG }}:dev --file Dockerfile.dev ."
 
   deployment/template:
     desc: genarate k8s files with env vars
@@ -119,7 +136,7 @@ tasks:
       - /tmp/bin/{{.MAIN_BINARY_NAME}} server {{ .CLI_ARGS }}
 
   run/server/log:
-    desc: run the application with stdout to file
+    desc: run the application with stdout to file{{ .CONTAINER_TOOL }}
     deps: [build]
     cmds:
       - mkdir -p /tmp/log/

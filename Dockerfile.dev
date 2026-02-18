@@ -11,7 +11,9 @@ RUN go mod download
 
 # Build app
 COPY . . 
-RUN CGO_ENABLED=0 go build -o /go/bin/app
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a \
+  -trimpath -ldflags "${LDFLAGS} -extldflags '-static'" \
+  -o /go/bin/app
 
 # Now copy it into our base image.
 FROM debian:12

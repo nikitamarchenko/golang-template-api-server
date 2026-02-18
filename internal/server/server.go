@@ -2,12 +2,14 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"sync/atomic"
 
 	"github.com/justinas/alice"
+	"github.com/nikitamarchenko/golang-template-api-server/internal/version"
 )
 
 // Config for HTTP server.
@@ -34,6 +36,7 @@ func (s *server) routes() http.Handler {
 func (s *server) handlers() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.handleHealthz())
+	mux.HandleFunc("/version", s.handleVersion())
 
 	return mux
 }
@@ -96,6 +99,13 @@ func (s *server) handleHealthz() http.HandlerFunc {
 		if err != nil {
 			log.Error("write ok status", slog.Any("err", err))
 		}
+	})
+}
+func (s *server) handleVersion() http.HandlerFunc {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(version.GetVersion())
 	})
 }
 
