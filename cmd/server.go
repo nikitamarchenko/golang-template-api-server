@@ -27,10 +27,12 @@ var serverCmd = &cobra.Command{ //nolint:gochecknoglobals // ok for cobra
 	RunE: func(_ *cobra.Command, _ []string) error {
 		logLevel := viper.GetString("log-level")
 		sLoglevel := slog.LevelInfo
+
 		err := sLoglevel.UnmarshalText([]byte(logLevel))
 		if err != nil {
 			return fmt.Errorf("run: %w", err)
 		}
+
 		logOpt := slog.HandlerOptions{
 			Level:       sLoglevel,
 			AddSource:   viper.GetBool(argGlobalLogShowSource),

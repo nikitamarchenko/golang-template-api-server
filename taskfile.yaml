@@ -12,6 +12,9 @@ vars:
   DEPLOYMENT_TEMPLATE_DIR: ./deployment/plain/template/
   DEPLOYMENT_DIR: ./deployment/plain/
   CONTAINER_TOOL: docker
+  BIN_DIR: ./bin
+  GOLANGCI_LINT: ./bin/golangci-lint
+  GOLANGCI_VERSION: v2.10.1
 
 tasks:
   default:
@@ -24,26 +27,30 @@ tasks:
   tidy:
     desc: format code and tidy modfile
     cmds:
-      - golangci-lint fmt
+      - "{{ .GOLANGCI_LINT }} fmt"
       - go mod tidy -v
+
+  install/lint:
+    internal: true
+    dir: "{{ .BIN_DIR }}"
+    status:
+      - test -f golangci-lint
+    cmds:
+      - curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b . {{ .GOLANGCI_VERSION }}
 
   lint:
     desc: lint code with golangci-lint
+    deps: [install/lint]
     cmds:
-      - golangci-lint run {{ .CLI_ARGS }}
-
-  lint/docker:
-    desc: lint Dockerfile with hadolint
-    cmds:
-      - podman run --rm -i ghcr.io/hadolint/hadolint < Dockerfile
-      - podman run --rm -i ghcr.io/hadolint/hadolint < Dockerfile.dev
+      - "{{ .GOLANGCI_LINT }} run {{ .CLI_ARGS }}"
 
   lint/run:*:
     desc: lint code with spectific linter $ task lint/run:<linter>
+    deps: [install/lint]
     vars:
       LINTER: "{{index .MATCH 0}}"
     cmds:
-      - golangci-lint run --default=none -E {{ .LINTER }}
+      - "{{ .GOLANGCI_LINT }} run --default=none -E {{ .LINTER }}"
 
   audit:
     desc: run quality control checks

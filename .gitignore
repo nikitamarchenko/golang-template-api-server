@@ -1,3 +1,4 @@
 .env
 deployment/plain/deployment.yaml
 deployment/plain/service.yaml
+bin
