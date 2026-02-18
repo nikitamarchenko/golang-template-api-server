@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 
 	"github.com/justinas/alice"
+	sloghttp "github.com/samber/slog-http"
+
 	"github.com/nikitamarchenko/golang-template-api-server/internal/version"
 )
 
@@ -28,7 +30,7 @@ type server struct {
 func (s *server) routes() http.Handler {
 	return alice.New(
 		s.middlewareRecoverPanic,
-		s.logRequest,
+		sloghttp.New(s.newLogger("sloghttp")),
 		commonHeaders,
 	).Then(s.handlers())
 }
@@ -81,6 +83,7 @@ func (s *server) middlewareRecoverPanic(next http.Handler) http.Handler {
 func commonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server", "Go")
+		w.Header().Set(sloghttp.RequestIDHeaderKey ,sloghttp.GetRequestID(r))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -106,14 +109,5 @@ func (s *server) handleVersion() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(version.GetVersion())
-	})
-}
-
-func (s *server) logRequest(next http.Handler) http.Handler {
-	log := s.newLogger("server.logRequest")
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("request", slog.Any("request", r))
-		next.ServeHTTP(w, r)
 	})
 }
