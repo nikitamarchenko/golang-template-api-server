@@ -90,6 +90,8 @@ Other useful tasks:
 - `task test` — run tests
 - `task lint` — golangci-lint
 - `task build/image` — build Docker image
+- `task deployment/template` — generate Kubernetes manifests from templates (see [Deployment](#deployment))
+- `task kind/deploy` — build image and deploy to Kind (see [Deployment](#deployment))
 
 ## API Endpoints
 
@@ -121,6 +123,28 @@ docker run -p 8080:8080 myapp:latest
 ```
 
 The Dockerfile produces a minimal image (distroless). Default command is `server`; the app listens on port 8080.
+
+## Deployment
+
+### task deployment/template
+
+Generates Kubernetes manifests from templates by substituting environment variables (e.g. from `project.env`). Templates live in `deployment/plain/template/`; output is written to `deployment/plain/`.
+
+```bash
+task deployment/template
+```
+
+Produces `deployment/plain/deployment.yaml` and `deployment/plain/service.yaml`. Ensure `IMG`, `PROJECT_NAME`, and any other variables used in the templates are set (e.g. in `project.env`) before running.
+
+### task kind/deploy
+
+Builds the container image, loads it into a [Kind](https://kind.sigs.k8s.io/) cluster, and deploys the generated manifests. Requires Kind and `kubectl` configured to use the Kind cluster.
+
+```bash
+task kind/deploy
+```
+
+This task depends on `deployment/template` and `build/image`. It loads the image into the Kind cluster, then applies the resources under `deployment/plain/` (replacing any existing deployment). Ensure your Kind cluster is running (e.g. `kind create cluster`) and `project.env` has the correct `IMG` and `IMG_TAG`.
 
 ## Project Layout
 
