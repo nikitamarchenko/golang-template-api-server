@@ -23,7 +23,12 @@ var rootCmd = &cobra.Command{ //nolint:gochecknoglobals // ok for cobra
 
 // Execute entry point for main func.
 func Execute() error {
-	return rootCmd.Execute() //nolint:wrapcheck // don't need here
+	err := rootCmd.Execute()
+	if err != nil {
+		return fmt.Errorf("error: %w", err)
+	}
+
+	return nil
 }
 
 func init() { //nolint:gochecknoinits // ok for cobra
@@ -46,14 +51,14 @@ func rootInitRun() error {
 
 	err := viper.BindPFlag(argGlobalLogLevel, flags.Lookup(argGlobalLogLevel))
 	if err != nil {
-		return err //nolint:wrapcheck // don't need wrap here
+		return fmt.Errorf("viper bind flags error (%s): %w", argGlobalLogLevel, err)
 	}
 
 	flags.Bool(argGlobalLogShowSource, false, "log show source")
 
 	err = viper.BindPFlag(argGlobalLogShowSource, flags.Lookup(argGlobalLogShowSource))
 	if err != nil {
-		return err //nolint:wrapcheck // don't need wrap here
+		return fmt.Errorf("viper bind flags error (%s): %w", argGlobalLogShowSource, err)
 	}
 
 	return nil

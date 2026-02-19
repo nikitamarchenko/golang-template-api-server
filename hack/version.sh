@@ -71,7 +71,7 @@ version::get_version_vars() {
 version::ldflags() {
     version::get_version_vars
 
-    VERSION_PACKAGE=$(go list ./internal/version)
+    VERSION_PACKAGE=$(go list ./internal/globals)
 
     local -a ldflags
     function add_ldflag() {

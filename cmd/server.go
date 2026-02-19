@@ -66,7 +66,7 @@ func serverInitRun() error {
 
 	err := viper.BindPFlag(argHTTPServerPort, flags.Lookup(argHTTPServerPort))
 	if err != nil {
-		return err //nolint:wrapcheck // don't need wrap here
+		return fmt.Errorf("viper bind flags error (%s): %w", argHTTPServerPort, err)
 	}
 
 	// readinessPprobe.periodSeconds
@@ -76,7 +76,7 @@ func serverInitRun() error {
 	err = viper.BindPFlag(argHTTPReadinessProbePeriodSeconds,
 		flags.Lookup(argHTTPReadinessProbePeriodSeconds))
 	if err != nil {
-		return err //nolint:wrapcheck // don't need wrap here
+		return fmt.Errorf("viper bind flags error (%s): %w", argHTTPReadinessProbePeriodSeconds, err)
 	}
 
 	// Allow root user
@@ -84,7 +84,7 @@ func serverInitRun() error {
 
 	err = viper.BindPFlag(argAllowRootUser, flags.Lookup(argAllowRootUser))
 	if err != nil {
-		return err //nolint:wrapcheck // don't need wrap here
+		return fmt.Errorf("viper bind flags error (%s): %w", argAllowRootUser, err)
 	}
 
 	rootCmd.AddCommand(serverCmd)

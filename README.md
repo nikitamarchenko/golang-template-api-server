@@ -155,8 +155,8 @@ This task depends on `deployment/template` and `build/image`. It loads the image
 │   ├── server.go    # server subcommand and config binding
 │   └── cmd.go       # exit code constants
 ├── internal/
-│   ├── server/      # HTTP server, routes, middleware, handlers
-│   └── version/     # version info (injected at build via ldflags)
+│   ├── globals/     # globals (version info injected at build via ldflags)
+│   └── server/      # HTTP server, routes, middleware, handlers
 ├── main.go
 ├── go.mod / go.sum
 ├── Dockerfile       # multi-stage, distroless
@@ -172,7 +172,7 @@ This task depends on `deployment/template` and `build/image`. It loads the image
 - **Run:** `task run/server` or `./bin/your-binary server`
 - **Live reload:** `task run/server/live` (uses air)
 
-Version info for `/version` is set at build time; see `hack/version.sh` and `task build/release` / `task build/image`.
+Version info for `/version` is set at build time via ldflags into `internal/globals`; see `hack/version.sh` and `task build/release` / `task build/image`.
 
 ## License
 

@@ -11,7 +11,7 @@ import (
 	"github.com/justinas/alice"
 	sloghttp "github.com/samber/slog-http"
 
-	"github.com/nikitamarchenko/golang-template-api-server/internal/version"
+	"github.com/nikitamarchenko/golang-template-api-server/internal/globals"
 )
 
 // Config for HTTP server.
@@ -83,7 +83,7 @@ func (s *server) middlewareRecoverPanic(next http.Handler) http.Handler {
 func commonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server", "Go")
-		w.Header().Set(sloghttp.RequestIDHeaderKey ,sloghttp.GetRequestID(r))
+		w.Header().Set(sloghttp.RequestIDHeaderKey, sloghttp.GetRequestID(r))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -105,9 +105,14 @@ func (s *server) handleHealthz() http.HandlerFunc {
 	})
 }
 func (s *server) handleVersion() http.HandlerFunc {
+	log := s.newLogger("server.handleVersion")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(version.GetVersion())
+
+		err := json.NewEncoder(w).Encode(globals.GetVersion())
+		if err != nil {
+			log.Error("encode version object", slog.Any("err", err))
+		}
 	})
 }

@@ -77,7 +77,7 @@ func Run( //nolint:funlen,revive // too many closures
 			return ongoingCtx
 		},
 		ReadHeaderTimeout: httpReadHeaderTimeout,
-		ErrorLog: slog.NewLogLogger(log.Handler(), slog.LevelError),
+		ErrorLog:          slog.NewLogLogger(log.Handler(), slog.LevelError),
 	}
 	listenAndServeFailed := make(chan error)
 
