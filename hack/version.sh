@@ -94,4 +94,15 @@ version::ldflags() {
     echo "${ldflags[*]-}"
 }
 
-version::ldflags
+# Prints GIT_VERSION for image and chart versioning purposes
+version::git_version() {
+    version::get_version_vars
+
+    echo "${GIT_VERSION}"
+}
+
+if [ "${1:-}" = "--version" ]; then
+    version::git_version
+else
+    version::ldflags
+fi

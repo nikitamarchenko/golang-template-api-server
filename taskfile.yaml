@@ -5,7 +5,6 @@ dotenv: ["project.env", ".env"]
 vars:
   MAIN_PACKAGE_PATH: .
   MAIN_BINARY_NAME: "{{ .PROJECT_NAME }}"
-  IMG_TAG: latest
   GRC_APP:
     sh: command -v grc 2> /dev/null || exit 0
   LOG_FILE: log.txt
@@ -101,8 +100,10 @@ tasks:
     vars:
       LDFLAGS:
         sh: hack/version.sh
+      IMG_TAG:
+        sh: hack/version.sh --version
     cmds:
-      - "{{ .CONTAINER_TOOL }} build --build-arg LDFLAGS='{{ .LDFLAGS }}' -t {{ .IMG }}:{{ .IMG_TAG }} --file Dockerfile ."
+      - '{{ .CONTAINER_TOOL }} build --build-arg LDFLAGS="{{ .LDFLAGS }}" -t {{ .IMG }}:{{ .IMG_TAG }} --file Dockerfile .'
 
   build/image/dev:
     desc: build dev container image
@@ -110,7 +111,7 @@ tasks:
       LDFLAGS:
         sh: hack/version.sh
     cmds:
-      - "{{ .CONTAINER_TOOL }} build --build-arg LDFLAGS='{{ .LDFLAGS }}' -t {{ .IMG }}:dev --file Dockerfile.dev ."
+      - '{{ .CONTAINER_TOOL }} build --build-arg LDFLAGS="{{ .LDFLAGS }}" -t {{ .IMG }}:dev --file Dockerfile.dev .'
 
   deployment/template:
     desc: genarate k8s files with env vars
